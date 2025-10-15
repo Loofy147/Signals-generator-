@@ -1,6 +1,6 @@
 // app/services/__tests__/multiTimeframeService.test.ts
 import { calculateATR, calculateSMAFromCandles } from '../multiTimeframeService';
-import { Candle } from '../multiTimeframeService';
+import { Candle } from '../../types';
 
 describe('multiTimeframeService', () => {
   describe('calculateSMAFromCandles', () => {

@@ -12,11 +12,14 @@ export interface ProviderWithHealth {
   health: ProviderHealth;
 }
 
+import { LLMResponseParsed } from '../types';
+
 export function useSignalGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSignal, setLastSignal] = useState<TradingSignal | null>(null);
   const [providersWithHealth, setProvidersWithHealth] = useState<ProviderWithHealth[]>([]);
+  const [lastResponses, setLastResponses] = useState<LLMResponseParsed[]>([]);
 
   // Fetch available providers and their health on mount and whenever the list might change.
   const refreshProviders = useCallback(async () => {
@@ -59,6 +62,7 @@ export function useSignalGenerator() {
         if (result.final) {
           setLastSignal(result.final);
         }
+        setLastResponses(result.providerResponses);
         setLoading(false);
         // Refresh provider health after a call
         refreshProviders();
@@ -73,5 +77,5 @@ export function useSignalGenerator() {
     [providersWithHealth, refreshProviders]
   );
 
-  return { loading, error, lastSignal, generate, providersWithHealth, refreshProviders };
+  return { loading, error, lastSignal, lastResponses, generate, providersWithHealth, refreshProviders };
 }

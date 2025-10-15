@@ -21,7 +21,7 @@ const getStatusColor = (state: CircuitState) => {
 };
 
 export default function SignalsScreen() {
-  const { loading, error, lastSignal, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
+  const { loading, error, lastSignal, lastResponses, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
   const [modalVisible, setModalVisible] = useState(false);
   const [symbol, setSymbol] = useState('BTCUSDT');
 
@@ -82,6 +82,20 @@ export default function SignalsScreen() {
         <View style={styles.signalContainer}>
           <Text style={styles.sectionTitle}>Last Signal:</Text>
           <SignalCard signal={lastSignal} />
+        </View>
+      )}
+
+      {lastResponses.length > 0 && (
+        <View style={styles.responsesContainer}>
+          <Text style={styles.sectionTitle}>Provider Responses:</Text>
+          {lastResponses.map(response => (
+            <View key={response.providerId} style={styles.response}>
+              <Text>
+                <Text style={styles.bold}>{response.providerId}: </Text>
+                {response.ok ? `Success (${response.parsed?.type})` : `Failed (${response.error})`}
+              </Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -163,5 +177,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  responsesContainer: {
+    marginTop: 20,
+  },
+  response: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    marginBottom: 5,
+    borderColor: '#eee',
+    borderWidth: 1,
+  },
+  bold: {
+    fontWeight: 'bold',
   },
 });

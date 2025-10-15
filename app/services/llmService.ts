@@ -3,27 +3,7 @@ import { ProviderSpec, getProviderSecrets } from '../utils/providerStore';
 import { getHealthStatus, recordSuccess, recordFailure } from '../utils/providerHealthStore';
 import { fetchWithTimeout, sleep, extractTextFromObject } from './_utils_helpers';
 import { ParsedSignalSchema } from '../schemas';
-
-// NOTE: These types would typically be in a central `types.ts` file.
-// They are duplicated here temporarily to keep this module self-contained for the refactoring step.
-export interface LLMResponseParsed {
-  providerId: string;
-  raw: any;
-  ok: boolean;
-  parsed?: Partial<TradingSignal> & { reasoning?: string };
-  error?: string;
-}
-export type SignalType = 'BUY' | 'SELL' | 'HOLD';
-export interface TradingSignal {
-  id: string;
-  symbol: string;
-  type: SignalType;
-  confidence: number;
-  price: number;
-  timestamp: number;
-  reasoning?: string;
-  // Define other fields as needed from the full spec
-}
+import { LLMResponseParsed, TradingSignal } from '../types';
 
 /**
  * Replaces placeholders in a template string with values from a variables object.

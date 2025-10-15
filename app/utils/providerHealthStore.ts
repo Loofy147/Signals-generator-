@@ -1,19 +1,9 @@
 // app/utils/providerHealthStore.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
-
-export interface ProviderHealth {
-  providerId: string;
-  state: CircuitState;
-  failureCount: number;
-  lastAttempt: number; // Timestamp
-}
+import { CircuitState, ProviderHealth } from '../types';
+import { FAILURE_THRESHOLD, OPEN_TIMEOUT_MS } from '../constants';
 
 const HEALTH_KEY_PREFIX = '@app:provider_health:';
-const FAILURE_THRESHOLD = 3; // Number of failures before opening the circuit
-const OPEN_TIMEOUT_MS = 60 * 1000; // 1 minute before moving to HALF_OPEN
-
 const getHealthKey = (providerId: string) => `${HEALTH_KEY_PREFIX}${providerId}`;
 
 /**
