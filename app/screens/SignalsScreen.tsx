@@ -5,9 +5,23 @@ import { useSignalGenerator } from '../hooks/useSignalGenerator';
 import SignalCard from '../components/SignalCard';
 import LLMConfigModal from '../components/LLMConfigModal';
 import { TradingSignal } from '../types';
+import { CircuitState } from '../utils/providerHealthStore';
+
+const getStatusColor = (state: CircuitState) => {
+  switch (state) {
+    case 'CLOSED':
+      return 'green';
+    case 'HALF_OPEN':
+      return 'orange';
+    case 'OPEN':
+      return 'red';
+    default:
+      return 'grey';
+  }
+};
 
 export default function SignalsScreen() {
-  const { loading, error, lastSignal, generate, availableProviders, refreshProviders } = useSignalGenerator();
+  const { loading, error, lastSignal, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
   const [modalVisible, setModalVisible] = useState(false);
   const [symbol, setSymbol] = useState('BTCUSDT');
 
@@ -35,9 +49,19 @@ export default function SignalsScreen() {
         <Button title="Add Provider" onPress={() => setModalVisible(true)} />
       </View>
 
-      <Text style={styles.providerInfo}>
-        Available Providers: {availableProviders.length > 0 ? availableProviders.map(p => p.name || p.id).join(', ') : 'None'}
-      </Text>
+      <View style={styles.providerList}>
+        <Text style={styles.providerInfo}>Available Providers:</Text>
+        {providersWithHealth.length > 0 ? (
+          providersWithHealth.map(p => (
+            <View key={p.spec.id} style={styles.providerStatus}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor(p.health.state) }]} />
+              <Text>{p.spec.name || p.spec.id}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.providerInfo}> None</Text>
+        )}
+      </View>
 
       <View style={styles.controls}>
         <TextInput
@@ -47,7 +71,7 @@ export default function SignalsScreen() {
           placeholder="Enter Symbol (e.g., BTCUSDT)"
           autoCapitalize="characters"
         />
-        <Button title="Generate Signal" onPress={handleGenerate} disabled={loading || availableProviders.length === 0} />
+        <Button title="Generate Signal" onPress={handleGenerate} disabled={loading || providersWithHealth.length === 0} />
       </View>
 
       {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
@@ -96,6 +120,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  providerList: {
+    marginBottom: 20,
+  },
+  providerStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
   },
   input: {
     flex: 1,

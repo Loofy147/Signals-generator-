@@ -4,18 +4,31 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateTradingSignal, AggregationMode } from '../services/signalService';
 import { listProviderSpecs, ProviderSpec } from '../utils/providerStore';
+import { getHealthStatus, ProviderHealth } from '../utils/providerHealthStore';
 import { TradingSignal } from '../types';
+
+export interface ProviderWithHealth {
+  spec: ProviderSpec;
+  health: ProviderHealth;
+}
 
 export function useSignalGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSignal, setLastSignal] = useState<TradingSignal | null>(null);
-  const [availableProviders, setAvailableProviders] = useState<ProviderSpec[]>([]);
+  const [providersWithHealth, setProvidersWithHealth] = useState<ProviderWithHealth[]>([]);
 
-  // Fetch available providers on mount and whenever the list might change.
+  // Fetch available providers and their health on mount and whenever the list might change.
   const refreshProviders = useCallback(async () => {
     const specs = await listProviderSpecs();
-    setAvailableProviders(specs);
+    const healthPromises = specs.map(spec => getHealthStatus(spec.id));
+    const healths = await Promise.all(healthPromises);
+
+    const providers = specs.map(spec => ({
+      spec,
+      health: healths.find(h => h.providerId === spec.id)!,
+    }));
+    setProvidersWithHealth(providers);
   }, []);
 
   useEffect(() => {
@@ -27,31 +40,38 @@ export function useSignalGenerator() {
       symbol: string,
       aggregation: AggregationMode = 'WEIGHTED'
     ) => {
-      if (availableProviders.length === 0) {
-        setError("No LLM providers configured. Please add a provider in settings.");
-        return { error: "No providers" };
+      const activeProviders = providersWithHealth
+        .filter(p => p.health.state !== 'OPEN')
+        .map(p => p.spec);
+
+      if (activeProviders.length === 0) {
+        setError("No healthy LLM providers available. Check provider settings or wait for them to recover.");
+        return { error: "No healthy providers" };
       }
       setLoading(true);
       setError(null);
       try {
-        const { final, providerResponses, mtf } = await generateTradingSignal(
+        const result = await generateTradingSignal(
           symbol,
-          availableProviders,
+          activeProviders,
           aggregation
         );
-        if (final) {
-          setLastSignal(final);
+        if (result.final) {
+          setLastSignal(result.final);
         }
         setLoading(false);
-        return { final, providerResponses, mtf };
+        // Refresh provider health after a call
+        refreshProviders();
+        return result;
       } catch (err: any) {
         setError(String(err));
         setLoading(false);
+        refreshProviders(); // Also refresh on error
         return { error: String(err) };
       }
     },
-    [availableProviders] // Dependency on availableProviders ensures it uses the latest list.
+    [providersWithHealth, refreshProviders]
   );
 
-  return { loading, error, lastSignal, generate, availableProviders, refreshProviders };
+  return { loading, error, lastSignal, generate, providersWithHealth, refreshProviders };
 }
