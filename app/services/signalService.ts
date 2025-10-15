@@ -4,7 +4,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { fetchMultiTimeframeData, generateMultiTimeframeSummary, Timeframe, TimeframeAnalysis } from './multiTimeframeService';
 import { buildAdapterFromSpec, LLMResponseParsed } from './llmService';
-import { addSignalToPlaybook } from './playbookService';
+import { addSignalToPlaybook, findRelevantSignals, formatSignalsForPrompt } from './playbookService';
 import { SignalHistory, SignalType, TradingSignal } from '../types';
 import { ProviderSpec } from '../utils/providerStore';
 
@@ -28,10 +28,15 @@ export async function generateTradingSignal(
   const mtf = await fetchMultiTimeframeData(symbol, tfList);
   const mtfSummary = generateMultiTimeframeSummary(mtf);
 
+  // Retrieve and format relevant historical signals.
+  const relevantSignals = await findRelevantSignals(symbol, mtf);
+  const examplesSummary = formatSignalsForPrompt(relevantSignals);
+
   const prompt =
-    `Symbol: ${symbol}\nMulti-timeframe summary:\n${mtfSummary}\n\n` +
-    `Instruction: Generate a structured JSON trading signal with fields: type (BUY|SELL|HOLD), ` +
-    `confidence (0-100), price (number), stopLoss (number), takeProfit (number), reasoning (string).`;
+    `Symbol: ${symbol}\n\n## Current Market Analysis\n${mtfSummary}\n\n` +
+    `## Relevant Past Examples\n${examplesSummary}\n\n` +
+    `## Instruction\nBased on the analysis and past examples, generate a structured JSON trading signal ` +
+    `with fields: type (BUY|SELL|HOLD), confidence (0-100), price (number), stopLoss (number), takeProfit (number), and reasoning (string).`;
 
   const adapters = providerSpecs.map(buildAdapterFromSpec);
   const providerResponses = await Promise.all(adapters.map(a => a.call(prompt)));
