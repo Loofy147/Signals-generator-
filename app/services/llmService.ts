@@ -1,5 +1,6 @@
 // app/services/llmService.ts
 import { ProviderSpec, getProviderSecrets } from '../utils/providerStore';
+import { getHealthStatus, recordSuccess, recordFailure } from '../utils/providerHealthStore';
 import { fetchWithTimeout, sleep, extractTextFromObject } from './_utils_helpers';
 import { ParsedSignalSchema } from '../schemas';
 
@@ -49,6 +50,17 @@ export function buildAdapterFromSpec(spec: ProviderSpec) {
   const retries = spec.maxRetries ?? 1;
 
   async function call(prompt: string, extra: Record<string, any> = {}): Promise<LLMResponseParsed> {
+    // 1. Check provider health before making a call
+    const health = await getHealthStatus(spec.id);
+    if (health.state === 'OPEN') {
+      return {
+        providerId: spec.id,
+        raw: null,
+        ok: false,
+        error: `Circuit breaker is open for ${spec.id}. Temporarily unavailable.`,
+      };
+    }
+
     const secrets = await getProviderSecrets(spec.id) || {};
 
     // Build headers: merge spec.headers and replace any placeholders with secrets.
@@ -98,6 +110,7 @@ export function buildAdapterFromSpec(spec: ProviderSpec) {
         if (parsedJson) {
           const validationResult = ParsedSignalSchema.safeParse(parsedJson);
           if (validationResult.success) {
+            await recordSuccess(spec.id);
             return { providerId: spec.id, raw, ok: true, parsed: validationResult.data };
           } else {
             // Log the validation error for debugging, but treat it as a failed parse.
@@ -107,13 +120,18 @@ export function buildAdapterFromSpec(spec: ProviderSpec) {
         }
 
         // If no JSON was found or parsed, return a failed response.
-        return { providerId: spec.id, raw, ok: false, error: 'No valid JSON found in response' };
+        const result = { providerId: spec.id, raw, ok: false, error: 'No valid JSON found in response' };
+        await recordFailure(spec.id);
+        return result;
       } catch (err) {
         lastErr = err;
         attempt++;
         if (attempt <= retries) await sleep(200 * Math.pow(2, attempt));
       }
     }
+
+    // If all retries fail, record the failure and return the error.
+    await recordFailure(spec.id);
     return { providerId: spec.id, raw: null, ok: false, error: String(lastErr) };
   }
 
