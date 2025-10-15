@@ -4,10 +4,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { SignalHistory } from '../types';
-import { Timeframe, TimeframeAnalysis } from './multiTimeframeService';
+import { Timeframe, TimeframeAnalysis } from '../types';
+import { MAX_SIGNALS_TO_STORE } from '../constants';
 
 const PLAYBOOK_KEY = '@app:playbook:v1';
-const MAX_SIGNALS = 500;
 
 export async function loadPlaybook(): Promise<SignalHistory[]> {
   try {
@@ -20,7 +20,7 @@ export async function loadPlaybook(): Promise<SignalHistory[]> {
 }
 
 export async function savePlaybook(list: SignalHistory[]) {
-  const truncated = list.slice(-MAX_SIGNALS);
+  const truncated = list.slice(-MAX_SIGNALS_TO_STORE);
   await AsyncStorage.setItem(PLAYBOOK_KEY, JSON.stringify(truncated));
 }
 
@@ -45,9 +45,26 @@ export async function clearPlaybook() {
 
 export async function getPlaybookSummary() {
   const list = await loadPlaybook();
-  // NOTE: This is a simplified summary. The full implementation would have more detailed stats.
   const total = list.length;
-  return { total };
+  const wins = list.filter((l) => l.outcome === 'WIN').length;
+  const losses = list.filter((l) => l.outcome === 'LOSS').length;
+  const winRate = total > 0 ? (wins / (wins + losses)) * 100 : 0;
+
+  const pnlPercentages = list
+    .map(l => l.pnlPercent)
+    .filter((p): p is number => typeof p === 'number');
+
+  const avgPnl = pnlPercentages.length > 0
+    ? pnlPercentages.reduce((a, b) => a + b, 0) / pnlPercentages.length
+    : 0;
+
+  return {
+    total,
+    wins,
+    losses,
+    winRate: parseFloat(winRate.toFixed(2)),
+    avgPnl: parseFloat(avgPnl.toFixed(2)),
+  };
 }
 
 /**

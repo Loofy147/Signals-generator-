@@ -39,3 +39,41 @@ export interface SignalHistory {
   closedAt?: number;
   hitTarget?: 'TP' | 'SL' | 'MANUAL' | null;
 }
+
+// From llmService
+export interface LLMResponseParsed {
+  providerId: string;
+  raw: any;
+  ok: boolean;
+  parsed?: Partial<TradingSignal> & { reasoning?: string };
+  error?: string;
+}
+
+// From multiTimeframeService
+export interface Candle {
+  t: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+export type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+export interface TimeframeAnalysis {
+  timeframe: Timeframe;
+  lastCandle?: Candle;
+  trend: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  volatility: number;
+  support?: number[];
+  resistance?: number[];
+  volumeInfo?: { avg: number; last: number };
+}
+
+// From providerHealthStore
+export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+export interface ProviderHealth {
+  providerId: string;
+  state: CircuitState;
+  failureCount: number;
+  lastAttempt: number; // Timestamp
+}

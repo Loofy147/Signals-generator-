@@ -2,21 +2,7 @@
  * @file Fetches and analyzes multi-timeframe market data from Binance.
  */
 import { fetchWithTimeout } from './_utils_helpers';
-
-// NOTE: Types would normally be in a central `types.ts` file.
-export interface Candle {
-  t: number; open: number; high: number; low: number; close: number; volume: number;
-}
-export type Timeframe = '1m'|'5m'|'15m'|'1h'|'4h'|'1d';
-export interface TimeframeAnalysis {
-  timeframe: Timeframe;
-  lastCandle?: Candle;
-  trend: 'BULLISH'|'BEARISH'|'NEUTRAL';
-  volatility: number;
-  support?: number[];
-  resistance?: number[];
-  volumeInfo?: { avg: number; last: number };
-}
+import { Candle, Timeframe, TimeframeAnalysis } from '../types';
 
 const BINANCE_BASE = 'https://api.binance.com/api/v3';
 
