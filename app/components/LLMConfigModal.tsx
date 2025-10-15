@@ -32,8 +32,6 @@ export default function LLMConfigModal({ onClose, onSaveSuccess }) {
     try {
       await saveProviderSpec(spec);
 
-      // Simple logic to find an API_KEY placeholder and store the provided key.
-      // A more robust solution would parse all {{placeholders}} and generate a form for them.
       const hasApiKeyPlaceholder = Object.values(headers).some(
         (val: string) => typeof val === 'string' && val.includes('{{API_KEY}}')
       );
@@ -43,10 +41,10 @@ export default function LLMConfigModal({ onClose, onSaveSuccess }) {
       }
 
       Alert.alert('Success', `Provider "${name || id}" saved successfully.`);
-      onSaveSuccess(); // Callback to trigger refresh in the parent component
+      onSaveSuccess();
       onClose();
     } catch (error) {
-      Alert.alert('Error', `Failed to save provider: ${error.message}`);
+      Alert.alert('Validation Error', error.message);
     }
   };
 

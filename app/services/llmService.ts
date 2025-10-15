@@ -1,6 +1,7 @@
 // app/services/llmService.ts
 import { ProviderSpec, getProviderSecrets } from '../utils/providerStore';
 import { fetchWithTimeout, sleep, extractTextFromObject } from './_utils_helpers';
+import { ParsedSignalSchema } from '../schemas';
 
 // NOTE: These types would typically be in a central `types.ts` file.
 // They are duplicated here temporarily to keep this module self-contained for the refactoring step.
@@ -82,14 +83,31 @@ export function buildAdapterFromSpec(spec: ProviderSpec) {
         const text = extractTextFromObject(raw);
 
         // Attempt to parse a JSON block from the response text.
-        let parsed: Partial<TradingSignal> | undefined;
+        let parsedJson: object | undefined;
         if (text) {
           const match = text.match(/\{[\s\S]*\}/);
           if (match) {
-            try { parsed = JSON.parse(match[0]); } catch { /* Ignore parsing errors */ }
+            try {
+              parsedJson = JSON.parse(match[0]);
+            } catch {
+              // Not a valid JSON object, do nothing.
+            }
           }
         }
-        return { providerId: spec.id, raw, ok: true, parsed };
+
+        if (parsedJson) {
+          const validationResult = ParsedSignalSchema.safeParse(parsedJson);
+          if (validationResult.success) {
+            return { providerId: spec.id, raw, ok: true, parsed: validationResult.data };
+          } else {
+            // Log the validation error for debugging, but treat it as a failed parse.
+            console.warn(`Validation failed for provider ${spec.id}:`, validationResult.error.errors);
+            return { providerId: spec.id, raw, ok: false, error: 'Invalid response schema' };
+          }
+        }
+
+        // If no JSON was found or parsed, return a failed response.
+        return { providerId: spec.id, raw, ok: false, error: 'No valid JSON found in response' };
       } catch (err) {
         lastErr = err;
         attempt++;

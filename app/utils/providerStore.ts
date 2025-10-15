@@ -1,6 +1,7 @@
 // app/utils/providerStore.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { ProviderSpecSchema } from '../schemas';
 
 export interface ProviderSpec {
   id: string;                     // unique id e.g. "my-llm-1"
@@ -29,9 +30,21 @@ export async function getProviderSpec(id: string): Promise<ProviderSpec | null> 
 }
 
 export async function saveProviderSpec(spec: ProviderSpec): Promise<void> {
+  // Validate the spec against the schema before saving.
+  const validationResult = ProviderSpecSchema.safeParse(spec);
+  if (!validationResult.success) {
+    // Combine error messages into a single string.
+    const errorMessage = validationResult.error.errors.map(e => e.message).join(', ');
+    throw new Error(`Invalid provider spec: ${errorMessage}`);
+  }
+
   const specs = await listProviderSpecs();
   const idx = specs.findIndex(s => s.id === spec.id);
-  if (idx === -1) specs.push(spec); else specs[idx] = spec;
+  if (idx === -1) {
+    specs.push(spec);
+  } else {
+    specs[idx] = spec;
+  }
   await AsyncStorage.setItem(SPECS_KEY, JSON.stringify(specs));
 }
 
