@@ -7,6 +7,11 @@ interface SignalCardProps {
   signal: TradingSignal;
 }
 
+/**
+ * A component to display a trading signal.
+ * @param {SignalCardProps} props - The component's props.
+ * @returns {JSX.Element} The rendered component.
+ */
 export default function SignalCard({ signal }: SignalCardProps) {
   const cardStyle =
     signal.type === 'BUY' ? styles.buyCard : signal.type === 'SELL' ? styles.sellCard : styles.holdCard;

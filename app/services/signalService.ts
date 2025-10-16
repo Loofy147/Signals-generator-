@@ -8,8 +8,23 @@ import { addSignalToPlaybook, findRelevantSignals, formatSignalsForPrompt } from
 import { SignalHistory, SignalType, TradingSignal } from '../types';
 import { ProviderSpec } from '../utils/providerStore';
 
+/**
+ * The aggregation mode for combining signals from multiple providers.
+ * @typedef {'MAJORITY' | 'WEIGHTED' | 'FIRST'} AggregationMode
+ */
 export type AggregationMode = 'MAJORITY' | 'WEIGHTED' | 'FIRST';
 
+/**
+ * Generates a trading signal by querying multiple LLM providers and aggregating their responses.
+ * @param {string} symbol The trading symbol, e.g., 'BTCUSDT'.
+ * @param {ProviderSpec[]} providerSpecs An array of provider specifications.
+ * @param {AggregationMode} [aggregation='WEIGHTED'] The method for aggregating signals.
+ * @param {object} [options] - Additional options for signal generation.
+ * @param {number} [options.positionRiskPercent] The percentage of the portfolio to risk on the trade.
+ * @param {string} [options.extraContext] - Extra context to include in the prompt.
+ * @param {Timeframe[]} [options.timeframes] - The timeframes to analyze.
+ * @returns {Promise<{final?: TradingSignal, providerResponses: LLMResponseParsed[], mtf?: Record<Timeframe, TimeframeAnalysis>}>} A promise that resolves to an object containing the final signal, the responses from each provider, and the multi-timeframe analysis.
+ */
 export async function generateTradingSignal(
   symbol: string,
   providerSpecs: ProviderSpec[],

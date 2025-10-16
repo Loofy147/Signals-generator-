@@ -3,7 +3,13 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { saveProviderSpec, storeProviderSecret } from '../utils/providerStore';
 
-// A simple modal component for adding or editing a generic LLM provider.
+/**
+ * A modal component for adding or editing a generic LLM provider.
+ * @param {object} props - The component's props.
+ * @param {() => void} props.onClose - A function to call when the modal is closed.
+ * @param {() => void} props.onSaveSuccess - A function to call when the provider is saved successfully.
+ * @returns {JSX.Element} The rendered component.
+ */
 export default function LLMConfigModal({ onClose, onSaveSuccess }) {
   const [id, setId] = useState('');
   const [name, setName] = useState('');

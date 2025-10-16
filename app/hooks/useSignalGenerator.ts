@@ -5,15 +5,35 @@ import { useState, useCallback, useEffect } from 'react';
 import { generateTradingSignal, AggregationMode } from '../services/signalService';
 import { listProviderSpecs, ProviderSpec } from '../utils/providerStore';
 import { getHealthStatus, ProviderHealth } from '../utils/providerHealthStore';
-import { TradingSignal } from '../types';
+import { TradingSignal, LLMResponseParsed } from '../types';
 
+/**
+ * Combines a provider's specification with its health status.
+ * @interface ProviderWithHealth
+ * @property {ProviderSpec} spec - The provider's specification.
+ * @property {ProviderHealth} health - The provider's health status.
+ */
 export interface ProviderWithHealth {
   spec: ProviderSpec;
   health: ProviderHealth;
 }
 
-import { LLMResponseParsed } from '../types';
-
+/**
+ * A React hook for generating trading signals.
+ *
+ * This hook manages the state for loading, errors, and the last generated signal.
+ * It also fetches and manages the list of available providers and their health.
+ *
+ * @returns {{
+ *   loading: boolean,
+ *   error: string | null,
+ *   lastSignal: TradingSignal | null,
+ *   lastResponses: LLMResponseParsed[],
+ *   generate: (symbol: string, aggregation?: AggregationMode) => Promise<any>,
+ *   providersWithHealth: ProviderWithHealth[],
+ *   refreshProviders: () => Promise<void>
+ * }} An object containing the hook's state and functions.
+ */
 export function useSignalGenerator() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

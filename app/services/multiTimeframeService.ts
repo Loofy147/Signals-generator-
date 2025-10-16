@@ -6,10 +6,22 @@ import { Candle, Timeframe, TimeframeAnalysis } from '../types';
 
 const BINANCE_BASE = 'https://api.binance.com/api/v3';
 
-function intervalMap(tf: Timeframe) {
+/**
+ * Maps a timeframe to a Binance API interval string.
+ * @param {Timeframe} tf The timeframe to map.
+ * @returns {string} The corresponding Binance API interval string.
+ */
+function intervalMap(tf: Timeframe): string {
   return tf; // 1m, 5m, 15m, 1h, 4h, 1d are valid for Binance
 }
 
+/**
+ * Fetches Kline (candlestick) data from the Binance API.
+ * @param {string} symbol The trading symbol, e.g., 'BTCUSDT'.
+ * @param {Timeframe} timeframe The timeframe for the Kline data.
+ * @param {number} [limit=200] The number of candles to fetch.
+ * @returns {Promise<Candle[]>} A promise that resolves to an array of candles.
+ */
 export async function fetchKlineData(symbol: string, timeframe: Timeframe, limit = 200): Promise<Candle[]> {
   const interval = intervalMap(timeframe);
   const url = `${BINANCE_BASE}/klines?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=${limit}`;
@@ -21,6 +33,12 @@ export async function fetchKlineData(symbol: string, timeframe: Timeframe, limit
   }));
 }
 
+/**
+ * Calculates the Average True Range (ATR) for a series of candles.
+ * @param {Candle[]} candles An array of candles.
+ * @param {number} [period=14] The period over which to calculate the ATR.
+ * @returns {number} The calculated ATR.
+ */
 export function calculateATR(candles: Candle[], period = 14): number {
   if (candles.length < period + 1) return 0;
   const trs: number[] = [];
@@ -34,6 +52,12 @@ export function calculateATR(candles: Candle[], period = 14): number {
   return slice.reduce((a, b) => a + b, 0) / slice.length;
 }
 
+/**
+ * Calculates the Simple Moving Average (SMA) for a series of candles.
+ * @param {Candle[]} candles An array of candles.
+ * @param {number} [length=50] The length of the SMA.
+ * @returns {number | null} The calculated SMA, or null if there is not enough data.
+ */
 export function calculateSMAFromCandles(candles: Candle[], length = 50): number | null {
   const closes = candles.map(c => c.close);
   if (closes.length < length) return null;
@@ -41,6 +65,12 @@ export function calculateSMAFromCandles(candles: Candle[], length = 50): number 
   return slice.reduce((a, b) => a + b, 0) / slice.length;
 }
 
+/**
+ * Analyzes a single timeframe of market data.
+ * @param {Candle[]} candles An array of candles for the timeframe.
+ * @param {Timeframe} timeframe The timeframe being analyzed.
+ * @returns {TimeframeAnalysis} An object containing the analysis results.
+ */
 export function analyzeTimeframe(candles: Candle[], timeframe: Timeframe): TimeframeAnalysis {
   const last = candles[candles.length - 1];
   const atr = calculateATR(candles, 14);
@@ -58,6 +88,12 @@ export function analyzeTimeframe(candles: Candle[], timeframe: Timeframe): Timef
   };
 }
 
+/**
+ * Fetches and analyzes market data for multiple timeframes.
+ * @param {string} symbol The trading symbol, e.g., 'BTCUSDT'.
+ * @param {Timeframe[]} [timeframes=['1m', '5m', '15m', '1h', '4h', '1d']] An array of timeframes to analyze.
+ * @returns {Promise<Record<Timeframe, TimeframeAnalysis>>} A promise that resolves to a record of timeframe analyses.
+ */
 export async function fetchMultiTimeframeData(
   symbol: string,
   timeframes: Timeframe[] = ['1m', '5m', '15m', '1h', '4h', '1d']
@@ -75,6 +111,11 @@ export async function fetchMultiTimeframeData(
   return Object.fromEntries(analyses) as Record<Timeframe, TimeframeAnalysis>;
 }
 
+/**
+ * Generates a human-readable summary of the multi-timeframe analysis.
+ * @param {Record<Timeframe, TimeframeAnalysis>} mtf A record of timeframe analyses.
+ * @returns {string} A string containing the summary.
+ */
 export function generateMultiTimeframeSummary(mtf: Record<Timeframe, TimeframeAnalysis>): string {
   return (Object.keys(mtf) as Timeframe[])
     .map(tf => {
