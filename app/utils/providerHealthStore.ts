@@ -7,7 +7,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CircuitState, ProviderHealth } from '../types';
-import { FAILURE_THRESHOLD, OPEN_TIMEOUT_MS } from '../constants';
+import { config } from '../config';
 
 const HEALTH_KEY_PREFIX = '@app:provider_health:';
 
@@ -30,7 +30,7 @@ export async function getHealthStatus(providerId: string): Promise<ProviderHealt
   if (raw) {
     const health: ProviderHealth = JSON.parse(raw);
     // Check if an 'OPEN' circuit should transition to 'HALF_OPEN'
-    if (health.state === 'OPEN' && Date.now() - health.lastAttempt > OPEN_TIMEOUT_MS) {
+    if (health.state === 'OPEN' && Date.now() - health.lastAttempt > config.circuitBreaker.openTimeoutMs) {
       return { ...health, state: 'HALF_OPEN' };
     }
     return health;
@@ -80,7 +80,7 @@ export async function recordFailure(providerId: string): Promise<void> {
   if (currentHealth.state === 'HALF_OPEN') {
     // A single failure in HALF_OPEN state re-opens the circuit immediately.
     newState = 'OPEN';
-  } else if (newFailureCount >= FAILURE_THRESHOLD) {
+  } else if (newFailureCount >= config.circuitBreaker.failureThreshold) {
     // Reaching the threshold opens the circuit.
     newState = 'OPEN';
   }

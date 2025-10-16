@@ -1,7 +1,17 @@
 // app/screens/SignalsScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, Modal, ActivityIndicator, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Modal, FlatList } from 'react-native';
+import {
+  Provider as PaperProvider,
+  Button,
+  TextInput,
+  Text,
+  ActivityIndicator,
+} from 'react-native-paper';
 import { useSignalGenerator } from '../hooks/useSignalGenerator';
+import { globalErrorHandler } from '../services/errorHandler';
+import '../i18n';
+import { useTranslation } from 'react-i18next';
 import SignalCard from '../components/SignalCard';
 import LLMConfigModal from '../components/LLMConfigModal';
 import { TradingSignal } from '../types';
@@ -31,9 +41,14 @@ const getStatusColor = (state: CircuitState) => {
  * @returns {JSX.Element} The rendered component.
  */
 export default function SignalsScreen() {
-  const { loading, error, lastSignal, lastResponses, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
+  const { t, i18n } = useTranslation();
+  const { loading, lastSignal, lastResponses, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
   const [modalVisible, setModalVisible] = useState(false);
   const [symbol, setSymbol] = useState('BTCUSDT');
+
+  useEffect(() => {
+    ErrorUtils.setGlobalHandler(globalErrorHandler);
+  }, []);
 
   const handleGenerate = () => {
     generate(symbol);
@@ -45,64 +60,77 @@ export default function SignalsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Modal
-        animationType="slide"
+    <PaperProvider>
+      <View style={styles.container}>
+        <Modal
+          animationType="slide"
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
         <LLMConfigModal onClose={() => setModalVisible(false)} onSaveSuccess={onSaveSuccess} />
       </Modal>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Trading Signals</Text>
-        <Button title="Add Provider" onPress={() => setModalVisible(true)} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <Text variant="headlineMedium">{t('tradingSignals')}</Text>
+        <Button mode="contained" onPress={() => setModalVisible(true)}>
+          {t('addProvider')}
+        </Button>
       </View>
 
-      <View style={styles.providerList}>
-        <Text style={styles.providerInfo}>Available Providers:</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <Button onPress={() => i18n.changeLanguage('en')}>EN</Button>
+        <Button onPress={() => i18n.changeLanguage('ar')}>AR</Button>
+      </View>
+
+      <View style={{ marginBottom: 20 }}>
+        <Text variant="bodySmall" style={{ color: '#666', fontStyle: 'italic' }}>{t('availableProviders')}</Text>
         {providersWithHealth.length > 0 ? (
           providersWithHealth.map(p => (
-            <View key={p.spec.id} style={styles.providerStatus}>
-              <View style={[styles.statusDot, { backgroundColor: getStatusColor(p.health.state) }]} />
+            <View key={p.spec.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+              <View style={{ width: 10, height: 10, borderRadius: 5, marginRight: 10, backgroundColor: getStatusColor(p.health.state) }} />
               <Text>{p.spec.name || p.spec.id}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.providerInfo}> None</Text>
+          <Text variant="bodySmall" style={{ color: '#666', fontStyle: 'italic' }}>{t('none')}</Text>
         )}
       </View>
 
-      <View style={styles.controls}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
         <TextInput
-          style={styles.input}
+          style={{ flex: 1, marginRight: 10 }}
           value={symbol}
           onChangeText={setSymbol}
-          placeholder="Enter Symbol (e.g., BTCUSDT)"
+          label={t('symbol')}
           autoCapitalize="characters"
         />
-        <Button title="Generate Signal" onPress={handleGenerate} disabled={loading || providersWithHealth.length === 0} />
+        <Button
+          mode="contained"
+          onPress={handleGenerate}
+          disabled={loading || providersWithHealth.length === 0}
+          loading={loading}
+        >
+          {t('generateSignal')}
+        </Button>
       </View>
 
-      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
-
-      {error && <Text style={styles.errorText}>Error: {error}</Text>}
+      {loading && <ActivityIndicator animating={true} style={{ marginVertical: 20 }} />}
 
       {lastSignal && (
-        <View style={styles.signalContainer}>
-          <Text style={styles.sectionTitle}>Last Signal:</Text>
+        <View style={{ flex: 1 }}>
+          <Text variant="titleLarge">{t('lastSignal')}</Text>
           <SignalCard signal={lastSignal} />
         </View>
       )}
 
       {lastResponses.length > 0 && (
-        <View style={styles.responsesContainer}>
-          <Text style={styles.sectionTitle}>Provider Responses:</Text>
+        <View style={{ marginTop: 20 }}>
+          <Text variant="titleLarge">{t('providerResponses')}</Text>
           {lastResponses.map(response => (
-            <View key={response.providerId} style={styles.response}>
+            <View key={response.providerId} style={{ padding: 10, backgroundColor: '#fff', borderRadius: 5, marginBottom: 5, borderColor: '#eee', borderWidth: 1 }}>
               <Text>
-                <Text style={styles.bold}>{response.providerId}: </Text>
-                {response.ok ? `Success (${response.parsed?.type})` : `Failed (${response.error})`}
+                <Text style={{ fontWeight: 'bold' }}>{response.providerId}: </Text>
+                {response.ok ? `${t('success')} (${response.parsed?.type})` : `${t('failed')} (${response.error})`}
               </Text>
             </View>
           ))}
@@ -110,96 +138,10 @@ export default function SignalsScreen() {
       )}
 
       {!lastSignal && !loading && (
-        <View style={styles.placeholder}>
-          <Text>No signal generated yet. Press "Generate Signal" to start.</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>{t('noSignalGenerated')}</Text>
         </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f9f9f9',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  providerInfo: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  providerList: {
-    marginBottom: 20,
-  },
-  providerStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  loader: {
-    marginVertical: 20,
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginVertical: 10,
-  },
-  signalContainer: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  responsesContainer: {
-    marginTop: 20,
-  },
-  response: {
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-    marginBottom: 5,
-    borderColor: '#eee',
-    borderWidth: 1,
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-});

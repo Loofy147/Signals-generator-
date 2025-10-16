@@ -1,0 +1,15 @@
+{
+  "translation": {
+    "tradingSignals": "إشارات التداول",
+    "addProvider": "إضافة مزود",
+    "availableProviders": "المزودون المتاحون:",
+    "none": " لا يوجد",
+    "symbol": "الرمز",
+    "generateSignal": "توليد إشارة",
+    "lastSignal": "آخر إشارة:",
+    "providerResponses": "استجابات المزود:",
+    "noSignalGenerated": "لم يتم إنشاء أي إشارة حتى الآن. اضغط على \"توليد إشارة\" للبدء.",
+    "success": "نجاح",
+    "failed": "فشل"
+  }
+}

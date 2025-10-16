@@ -3,8 +3,7 @@
  */
 import { fetchWithTimeout } from './_utils_helpers';
 import { Candle, Timeframe, TimeframeAnalysis } from '../types';
-
-const BINANCE_BASE = 'https://api.binance.com/api/v3';
+import { config } from '../config';
 
 /**
  * Maps a timeframe to a Binance API interval string.
@@ -24,7 +23,7 @@ function intervalMap(tf: Timeframe): string {
  */
 export async function fetchKlineData(symbol: string, timeframe: Timeframe, limit = 200): Promise<Candle[]> {
   const interval = intervalMap(timeframe);
-  const url = `${BINANCE_BASE}/klines?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=${limit}`;
+  const url = `${config.api.binanceBaseUrl}/klines?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=${limit}`;
   const res = await fetchWithTimeout(url, {}, 8000);
   if (!res.ok) throw new Error(`Binance Klines fetch failed: ${res.status}`);
   const data = await res.json();
