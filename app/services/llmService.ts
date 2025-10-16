@@ -1,16 +1,22 @@
-// app/services/llmService.ts
+/**
+ * @file Manages interactions with Large Language Model (LLM) providers.
+ *
+ * This service builds a generic adapter for any LLM provider, allowing for
+ * dynamic, runtime configuration. It also integrates a circuit breaker
+ * to handle provider failures gracefully.
+ */
 import { ProviderSpec, getProviderSecrets } from '../utils/providerStore';
 import { getHealthStatus, recordSuccess, recordFailure } from '../utils/providerHealthStore';
 import { fetchWithTimeout, sleep, extractTextFromObject } from './_utils_helpers';
 import { ParsedSignalSchema } from '../schemas';
-import { LLMResponseParsed, TradingSignal } from '../types';
+import { LLMResponseParsed } from '../types';
 
 /**
  * Replaces placeholders in a template string with values from a variables object.
  * Placeholders are in the format `{{key}}`.
- * @param template The template string.
- * @param vars An object containing key-value pairs for replacement.
- * @returns The rendered string.
+ * @param {string} template The template string.
+ * @param {Record<string, any>} vars An object containing key-value pairs for replacement.
+ * @returns {string} The rendered string.
  */
 function renderTemplate(template: string, vars: Record<string, any>): string {
   return template.replace(/\{\{(.+?)\}\}/g, (_, key) => {
@@ -22,13 +28,19 @@ function renderTemplate(template: string, vars: Record<string, any>): string {
 /**
  * Builds a generic LLM adapter from a provider specification.
  * This function allows for dynamic, runtime configuration of any LLM provider.
- * @param spec The `ProviderSpec` object describing the LLM provider.
- * @returns An adapter object with a `call` method to interact with the LLM API.
+ * @param {ProviderSpec} spec The `ProviderSpec` object describing the LLM provider.
+ * @returns {{spec: ProviderSpec, call: (prompt: string, extra?: Record<string, any>) => Promise<LLMResponseParsed>}} An adapter object with a `call` method to interact with the LLM API.
  */
 export function buildAdapterFromSpec(spec: ProviderSpec) {
   const timeout = spec.timeoutMs ?? 9000;
   const retries = spec.maxRetries ?? 1;
 
+  /**
+   * Makes a call to the LLM provider's API.
+   * @param {string} prompt The prompt to send to the LLM.
+   * @param {Record<string, any>} [extra] - Extra variables to use in the request template.
+   * @returns {Promise<LLMResponseParsed>} A promise that resolves to the parsed response from the LLM.
+   */
   async function call(prompt: string, extra: Record<string, any> = {}): Promise<LLMResponseParsed> {
     // 1. Check provider health before making a call
     const health = await getHealthStatus(spec.id);

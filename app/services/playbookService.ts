@@ -2,13 +2,15 @@
  * @file Manages the storage and retrieval of trading signal history (the "playbook").
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
-import { SignalHistory } from '../types';
-import { Timeframe, TimeframeAnalysis } from '../types';
+import { SignalHistory, Timeframe, TimeframeAnalysis } from '../types';
 import { MAX_SIGNALS_TO_STORE } from '../constants';
 
 const PLAYBOOK_KEY = '@app:playbook:v1';
 
+/**
+ * Loads the playbook from AsyncStorage.
+ * @returns {Promise<SignalHistory[]>} A promise that resolves to an array of signal history items.
+ */
 export async function loadPlaybook(): Promise<SignalHistory[]> {
   try {
     const raw = await AsyncStorage.getItem(PLAYBOOK_KEY);
@@ -19,17 +21,31 @@ export async function loadPlaybook(): Promise<SignalHistory[]> {
   }
 }
 
+/**
+ * Saves the playbook to AsyncStorage.
+ * @param {SignalHistory[]} list The array of signal history items to save.
+ */
 export async function savePlaybook(list: SignalHistory[]) {
   const truncated = list.slice(-MAX_SIGNALS_TO_STORE);
   await AsyncStorage.setItem(PLAYBOOK_KEY, JSON.stringify(truncated));
 }
 
+/**
+ * Adds a new signal to the playbook.
+ * @param {SignalHistory} item The signal history item to add.
+ */
 export async function addSignalToPlaybook(item: SignalHistory) {
   const current = await loadPlaybook();
   current.push(item);
   await savePlaybook(current);
 }
 
+/**
+ * Updates the outcome of a signal in the playbook.
+ * @param {string} id The ID of the signal to update.
+ * @param {Partial<SignalHistory>} update An object containing the fields to update.
+ * @returns {Promise<boolean>} A promise that resolves to true if the update was successful, false otherwise.
+ */
 export async function updateSignalOutcome(id: string, update: Partial<SignalHistory>): Promise<boolean> {
   const list = await loadPlaybook();
   const idx = list.findIndex((s) => s.id === id);
@@ -39,10 +55,17 @@ export async function updateSignalOutcome(id: string, update: Partial<SignalHist
   return true;
 }
 
+/**
+ * Clears the playbook from AsyncStorage.
+ */
 export async function clearPlaybook() {
   await AsyncStorage.removeItem(PLAYBOOK_KEY);
 }
 
+/**
+ * Calculates a summary of the playbook's performance.
+ * @returns {Promise<{total: number, wins: number, losses: number, winRate: number, avgPnl: number}>} A promise that resolves to an object containing the playbook summary.
+ */
 export async function getPlaybookSummary() {
   const list = await loadPlaybook();
   const total = list.length;
@@ -69,10 +92,10 @@ export async function getPlaybookSummary() {
 
 /**
  * Finds and ranks relevant historical signals from the playbook.
- * @param symbol The trading symbol to match.
- * @param currentMtf The current multi-timeframe analysis data.
- * @param topN The number of top signals to return.
- * @returns A ranked list of the most relevant signal histories.
+ * @param {string} symbol The trading symbol to match.
+ * @param {Record<Timeframe, TimeframeAnalysis>} currentMtf The current multi-timeframe analysis data.
+ * @param {number} [topN=3] The number of top signals to return.
+ * @returns {Promise<SignalHistory[]>} A promise that resolves to a ranked list of the most relevant signal histories.
  */
 export async function findRelevantSignals(
   symbol: string,
@@ -126,8 +149,8 @@ export async function findRelevantSignals(
 
 /**
  * Formats a list of historical signals into a concise string for an LLM prompt.
- * @param signals An array of `SignalHistory` objects.
- * @returns A formatted string summarizing the signals.
+ * @param {SignalHistory[]} signals An array of `SignalHistory` objects.
+ * @returns {string} A formatted string summarizing the signals.
  */
 export function formatSignalsForPrompt(signals: SignalHistory[]): string {
   if (signals.length === 0) {

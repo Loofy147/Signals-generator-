@@ -7,6 +7,11 @@ import LLMConfigModal from '../components/LLMConfigModal';
 import { TradingSignal } from '../types';
 import { CircuitState } from '../utils/providerHealthStore';
 
+/**
+ * Returns a color based on the circuit state.
+ * @param {CircuitState} state - The circuit state.
+ * @returns {string} The color corresponding to the state.
+ */
 const getStatusColor = (state: CircuitState) => {
   switch (state) {
     case 'CLOSED':
@@ -20,6 +25,11 @@ const getStatusColor = (state: CircuitState) => {
   }
 };
 
+/**
+ * The main screen of the application.
+ * It displays the list of providers, allows generating new signals, and shows the last generated signal and provider responses.
+ * @returns {JSX.Element} The rendered component.
+ */
 export default function SignalsScreen() {
   const { loading, error, lastSignal, lastResponses, generate, providersWithHealth, refreshProviders } = useSignalGenerator();
   const [modalVisible, setModalVisible] = useState(false);
