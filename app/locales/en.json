@@ -1,0 +1,15 @@
+{
+  "translation": {
+    "tradingSignals": "Trading Signals",
+    "addProvider": "Add Provider",
+    "availableProviders": "Available Providers:",
+    "none": " None",
+    "symbol": "Symbol",
+    "generateSignal": "Generate Signal",
+    "lastSignal": "Last Signal:",
+    "providerResponses": "Provider Responses:",
+    "noSignalGenerated": "No signal generated yet. Press \"Generate Signal\" to start.",
+    "success": "Success",
+    "failed": "Failed"
+  }
+}

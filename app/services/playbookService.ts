@@ -3,7 +3,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SignalHistory, Timeframe, TimeframeAnalysis } from '../types';
-import { MAX_SIGNALS_TO_STORE } from '../constants';
+import { config } from '../config';
 
 const PLAYBOOK_KEY = '@app:playbook:v1';
 
@@ -26,7 +26,7 @@ export async function loadPlaybook(): Promise<SignalHistory[]> {
  * @param {SignalHistory[]} list The array of signal history items to save.
  */
 export async function savePlaybook(list: SignalHistory[]) {
-  const truncated = list.slice(-MAX_SIGNALS_TO_STORE);
+  const truncated = list.slice(-config.playbook.maxSignalsToStore);
   await AsyncStorage.setItem(PLAYBOOK_KEY, JSON.stringify(truncated));
 }
 
